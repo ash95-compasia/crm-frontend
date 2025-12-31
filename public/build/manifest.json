@@ -1,0 +1,155 @@
+{
+  "node_modules/canvg/lib/index.es.js": {
+    "file": "assets/index.es-Cvd2TKmX.js",
+    "name": "index.es",
+    "src": "node_modules/canvg/lib/index.es.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "node_modules/dompurify/dist/purify.es.mjs": {
+    "file": "assets/purify.es-B9ZVCkUG.js",
+    "name": "purify.es",
+    "src": "node_modules/dompurify/dist/purify.es.mjs",
+    "isDynamicEntry": true
+  },
+  "node_modules/html2canvas/dist/html2canvas.esm.js": {
+    "file": "assets/html2canvas.esm-QH1iLAAe.js",
+    "name": "html2canvas.esm",
+    "src": "node_modules/html2canvas/dist/html2canvas.esm.js",
+    "isDynamicEntry": true
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-DOXdSzax.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/Pages/config/components/LatePaymentTab.vue": {
+    "file": "assets/LatePaymentTab-n62NlPDb.js",
+    "name": "LatePaymentTab",
+    "src": "resources/js/Pages/config/components/LatePaymentTab.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/LatePaymentTab-pUOO7WMa.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/NotificationToast.vue": {
+    "file": "assets/NotificationToast-BOYrQip6.js",
+    "name": "NotificationToast",
+    "src": "resources/js/Pages/config/components/NotificationToast.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/PrefixModal.vue": {
+    "file": "assets/PrefixModal-B8CiD9Mi.js",
+    "name": "PrefixModal",
+    "src": "resources/js/Pages/config/components/PrefixModal.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/PrefixModal-BBKWeIAC.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/PrefixTab.vue": {
+    "file": "assets/PrefixTab-DgpsLuhK.js",
+    "name": "PrefixTab",
+    "src": "resources/js/Pages/config/components/PrefixTab.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/PrefixTab-BzDJa-RD.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/StatusModal.vue": {
+    "file": "assets/StatusModal-BtL-KH9E.js",
+    "name": "StatusModal",
+    "src": "resources/js/Pages/config/components/StatusModal.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/StatusTab.vue": {
+    "file": "assets/StatusTab-BxXcCNR7.js",
+    "name": "StatusTab",
+    "src": "resources/js/Pages/config/components/StatusTab.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/TaxModal.vue": {
+    "file": "assets/TaxModal-rDwQBxyC.js",
+    "name": "TaxModal",
+    "src": "resources/js/Pages/config/components/TaxModal.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/TaxModal-C4CKc9-E.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/Pages/config/components/TaxTab.vue": {
+    "file": "assets/TaxTab-DCwFr3tx.js",
+    "name": "TaxTab",
+    "src": "resources/js/Pages/config/components/TaxTab.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/TaxTab-CKpBMfu6.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CAAFiJ9L.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/html2canvas/dist/html2canvas.esm.js",
+      "node_modules/dompurify/dist/purify.es.mjs",
+      "node_modules/canvg/lib/index.es.js",
+      "resources/js/Pages/config/components/LatePaymentTab.vue",
+      "resources/js/Pages/config/components/TaxTab.vue",
+      "resources/js/Pages/config/components/PrefixTab.vue",
+      "resources/js/Pages/config/components/StatusTab.vue",
+      "resources/js/Pages/config/components/TaxModal.vue",
+      "resources/js/Pages/config/components/PrefixModal.vue",
+      "resources/js/Pages/config/components/StatusModal.vue",
+      "resources/js/Pages/config/components/NotificationToast.vue"
+    ],
+    "css": [
+      "assets/app-BCCgNXov.css",
+      "assets/app-DOXdSzax.css"
+    ]
+  }
+}
