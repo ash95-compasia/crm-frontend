@@ -312,17 +312,6 @@ const getPrefixTypeLabel = (type: any) => {
   const typeObj = props.prefixTypes.find(t => t.value === type)
   return typeObj ? typeObj.label : type
 }
-
-const formatVariables = [
-  { key: '{prefix}', description: 'The configured prefix' },
-  { key: '{year}', description: 'Full year (4 digits)' },
-  { key: '{yy}', description: 'Last 2 digits of year' },
-  { key: '{month}', description: 'Month number (1-12)' },
-  { key: '{mm}', description: 'Month with leading zero (01-12)' },
-  { key: '{sequence}', description: 'Sequence number padded to 4 digits' },
-  { key: '{day}', description: 'Day number (1-31)' },
-  { key: '{dd}', description: 'Day with leading zero (01-31)' }
-]
 </script>
 
 <style scoped>

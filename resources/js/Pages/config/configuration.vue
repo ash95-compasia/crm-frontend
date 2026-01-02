@@ -170,7 +170,7 @@ const NotificationToast = defineAsyncComponent(() => import('./components/Notifi
 // State
 const loading = ref(false)
 const isSubmitting = ref(false)
-const activeTab = ref<'late_payment' | 'tax' | 'prefix' | 'status'>('late_payment')
+const activeTab = ref<any>("late_payment")
 const notification = ref<{ message: string; type: 'success' | 'error' }>({ message: '', type: 'success' })
 const errors = ref<Record<string, string[]>>({})
 const prefixErrors = ref<Record<string, string[]>>({})
@@ -303,6 +303,7 @@ const nextNumberMap = computed(() => {
     )
     map[type.value] = config ? config.next_number : 'N/A'
   })
+  console.log("mapp",prefixTypes.value)
   return map
 })
 

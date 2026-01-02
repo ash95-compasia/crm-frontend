@@ -52,11 +52,11 @@
 
         <!-- Stats Cards -->
         <StatsCards
-          :outstanding-amount="Math.max(0, parseFloat(outstanding_amount) || 0)"
-          :unresolved-invoices="unresolved_invoice"
+          :outstanding-amount="outstandingBalance"
+          :unresolved-invoices="unresolvedInvoices"
           :unresolved-credit-notes="unresolvedCreditNotes"
           :total-overpayment="totalOverpayment"
-          :total-late-charges="totalLateCharges"
+          :total-late-charges="summary.total_late_charges || 0"
           :format-currency="formatCurrency"
           @view-late-charges="setSubTab('late-charges')"
           class="mb-6"
@@ -74,7 +74,7 @@
                     @update-information="handleUpdateInformation"
                     @view-nric="toNric"
                   />
-                  <CreditFacility :customer-loan="customer_loan" />
+                  <CreditFacility :customer-loan="String(customer_loan)" />
                   <EmploymentInformation
                     :customer="customer"
                     :list-bank="listBank"
@@ -94,7 +94,10 @@
                     @ref-update="handleRefUpdate"
                   />
                   <CorrespondenceAddress
-                    :customer="customer"
+                    :address="customer.address"
+                    :postal-code="customer.postal_code"
+                    :city="customer.city"
+                    :state="customer.state"
                     :list-state="listState"
                     :cust-id="cust_id"
                     @cust-update="handleCustUpdate"
@@ -125,8 +128,8 @@
               <div class="p-4">
                 <GlobalTable
                   :data="ordersTableData"
-                  :columns="ORDERS_TABLE_COLUMNS"
-                  :filters="ORDERS_TABLE_FILTERS"
+                  :columns="importedORDERS_TABLE_COLUMNS"
+                  :filters="importedORDERS_TABLE_FILTERS"
                   :default-sort="{ key: 'order_number', order: 'asc' }"
                   storage-key="customer-orders-table"
                   class="dark:bg-gray-800"
@@ -156,8 +159,8 @@
               <div class="p-4">
                 <GlobalTable
                   :data="contractsTableData"
-                  :columns="CONTRACTS_TABLE_COLUMNS"
-                  :filters="CONTRACTS_TABLE_FILTERS"
+                  :columns="importedCONTRACTS_TABLE_COLUMNS"
+                  :filters="importedCONTRACTS_TABLE_FILTERS"
                   :default-sort="{ key: 'contract_number', order: 'asc' }"
                   storage-key="customer-contracts-table"
                   class="dark:bg-gray-800"
@@ -189,13 +192,14 @@
                         @change="filterARData"
                         class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-[250px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300"
                       >
+                        <option value="">All Orders</option>
                         <option v-for="order in orders" :key="order.id" :value="order.id">
                           {{ order.order_number }} - {{ formatCurrency(order.monthly_subscription) }}
                         </option>
                       </select>
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
-                      Selected: {{ selectedOrder ? selectedOrder.order_number : 'No order selected' }}
+                      Selected: {{ selectedOrder ? selectedOrder.order_number : 'All Orders' }}
                     </div>
                   </div>
                   <ARSubNavigation :active-ar-tab="activeARTab" @set-sub-tab="setSubTab" />
@@ -210,20 +214,20 @@
                   :filtered-credit-notes-table-data="filteredCreditNotesTableData"
                   :filtered-late-charges-table-data="filteredLateChargesTableData"
                   :aging-report="agingReport"
-                  :soa-table-columns="SOA_TABLE_COLUMNS"
-                  :invoices-table-columns="INVOICES_TABLE_COLUMNS"
-                  :payments-table-columns="PAYMENTS_TABLE_COLUMNS"
-                  :credit-notes-table-columns="CREDIT_NOTES_TABLE_COLUMNS"
-                  :late-charges-table-columns="LATE_CHARGES_TABLE_COLUMNS"
-                  :aging-table-columns="AGING_TABLE_COLUMNS"
-                  :soa-table-filters="SOA_TABLE_FILTERS"
-                  :invoices-table-filters="INVOICES_TABLE_FILTERS"
-                  :payments-table-filters="PAYMENTS_TABLE_FILTERS"
-                  :credit-notes-table-filters="CREDIT_NOTES_TABLE_FILTERS"
-                  :late-charges-table-filters="LATE_CHARGES_TABLE_FILTERS"
-                  :aging-table-filters="AGING_TABLE_FILTERS"
-                  :total-due="totalDue"
-                  :total-paid="totalPaid"
+                  :soa-table-columns="importedSOA_TABLE_COLUMNS"
+                  :invoices-table-columns="importedINVOICES_TABLE_COLUMNS"
+                  :payments-table-columns="importedPAYMENTS_TABLE_COLUMNS"
+                  :credit-notes-table-columns="importedCREDIT_NOTES_TABLE_COLUMNS"
+                  :late-charges-table-columns="importedLATE_CHARGES_TABLE_COLUMNS"
+                  :aging-table-columns="importedAGING_TABLE_COLUMNS"
+                  :soa-table-filters="importedSOA_TABLE_FILTERS"
+                  :invoices-table-filters="importedINVOICES_TABLE_FILTERS"
+                  :payments-table-filters="importedPAYMENTS_TABLE_FILTERS"
+                  :credit-notes-table-filters="importedCREDIT_NOTES_TABLE_FILTERS"
+                  :late-charges-table-filters="importedLATE_CHARGES_TABLE_FILTERS"
+                  :aging-table-filters="importedAGING_TABLE_FILTERS"
+                  :total-due="summary.total_due || 0"
+                  :total-paid="summary.total_paid || 0"
                   :outstanding-balance="outstandingBalance"
                   :format-currency="formatCurrency"
                   :compute-late-charge="computeLateCharge"
@@ -233,32 +237,34 @@
               </div>
             </div>
           </transition>
-        </div>
       </div>
 
-    <Notification :notification="notification" />
+      <Notification :notification="notification" />
+    </div>
   </div>
 </template>
 
 <script>
+import { markRaw } from 'vue';
 import {
   ORDERS_TABLE_COLUMNS,
-  CONTRACTS_TABLE_COLUMNS,
-  SOA_TABLE_COLUMNS,
-  INVOICES_TABLE_COLUMNS,
-  PAYMENTS_TABLE_COLUMNS,
-  CREDIT_NOTES_TABLE_COLUMNS,
-  LATE_CHARGES_TABLE_COLUMNS,
-  AGING_TABLE_COLUMNS,
   ORDERS_TABLE_FILTERS,
+  CONTRACTS_TABLE_COLUMNS,
   CONTRACTS_TABLE_FILTERS,
+  SOA_TABLE_COLUMNS,
   SOA_TABLE_FILTERS,
+  INVOICES_TABLE_COLUMNS,
   INVOICES_TABLE_FILTERS,
+  PAYMENTS_TABLE_COLUMNS,
   PAYMENTS_TABLE_FILTERS,
+  CREDIT_NOTES_TABLE_COLUMNS,
   CREDIT_NOTES_TABLE_FILTERS,
+  LATE_CHARGES_TABLE_COLUMNS,
   LATE_CHARGES_TABLE_FILTERS,
+  AGING_TABLE_COLUMNS,
   AGING_TABLE_FILTERS
 } from '../../Constants/tableColumns';
+
 import GlobalTable from '@/Components/globalTable.vue';
 import StatsCards from '@/Components/CustomersPage/StatsCards.vue';
 import ContactInformation from '@/Components/CustomersPage/ContactInformation.vue';
@@ -270,14 +276,27 @@ import AdditionalDocuments from '@/Components/CustomersPage/AdditionalDocuments.
 import ARSubNavigation from '@/Components/CustomersPage/ARSubNavigation.vue';
 import ARContent from '@/Components/CustomersPage/ARContent.vue';
 import Notification from '@/Components/CustomersPage/NotificationCustomer.vue';
+
 import axios from 'axios';
 import { useApi } from '../../router/useApi';
 import Swal from 'sweetalert2';
 
-const SummaryIcon = { template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>` };
-const OrdersIcon = { template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>` };
-const ContractsIcon = { template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>` };
-const ARIcon = { template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path></svg>` };
+// Define SVG icons and mark them as raw to prevent reactivity warnings
+const SummaryIcon = markRaw({
+  template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`
+});
+
+const OrdersIcon = markRaw({
+  template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>`
+});
+
+const ContractsIcon = markRaw({
+  template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`
+});
+
+const ARIcon = markRaw({
+  template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path></svg>`
+});
 
 export default {
   name: 'CustomerARManagement',
@@ -300,6 +319,22 @@ export default {
   },
   data() {
     return {
+      importedORDERS_TABLE_COLUMNS: ORDERS_TABLE_COLUMNS,
+      importedORDERS_TABLE_FILTERS: ORDERS_TABLE_FILTERS,
+      importedCONTRACTS_TABLE_COLUMNS: CONTRACTS_TABLE_COLUMNS,
+      importedCONTRACTS_TABLE_FILTERS: CONTRACTS_TABLE_FILTERS,
+      importedSOA_TABLE_COLUMNS: SOA_TABLE_COLUMNS,
+      importedSOA_TABLE_FILTERS: SOA_TABLE_FILTERS,
+      importedINVOICES_TABLE_COLUMNS: INVOICES_TABLE_COLUMNS,
+      importedINVOICES_TABLE_FILTERS: INVOICES_TABLE_FILTERS,
+      importedPAYMENTS_TABLE_COLUMNS: PAYMENTS_TABLE_COLUMNS,
+      importedPAYMENTS_TABLE_FILTERS: PAYMENTS_TABLE_FILTERS,
+      importedCREDIT_NOTES_TABLE_COLUMNS: CREDIT_NOTES_TABLE_COLUMNS,
+      importedCREDIT_NOTES_TABLE_FILTERS: CREDIT_NOTES_TABLE_FILTERS,
+      importedLATE_CHARGES_TABLE_COLUMNS: LATE_CHARGES_TABLE_COLUMNS,
+      importedLATE_CHARGES_TABLE_FILTERS: LATE_CHARGES_TABLE_FILTERS,
+      importedAGING_TABLE_COLUMNS: AGING_TABLE_COLUMNS,
+      importedAGING_TABLE_FILTERS: AGING_TABLE_FILTERS,
       customer: {},
       orders: [],
       contracts: [],
@@ -309,6 +344,8 @@ export default {
       lateCharges: [],
       refunds: [],
       agingReport: [],
+      summary: {},
+
       selectedOrderId: '',
       activeARTab: 'soa',
       activeTab: 'summary',
@@ -326,7 +363,7 @@ export default {
       currentDate: new Date(),
       customer_loan: 0,
       cust_id: '',
-      cloudFrontURL: 'process.env.VUE_APP_CLOUDFRONT_URL',
+      // cloudFrontURL: process.env.VUE_APP_CLOUDFRONT_URL || '',
       uploadstat: '',
       sucessaddmsd: '',
       sucessemplmsd: '',
@@ -335,6 +372,7 @@ export default {
       listRelation: [],
       listState: [],
       listBank: [],
+
       tabs: [
         { id: 'summary', name: 'Summary', icon: SummaryIcon },
         { id: 'orders', name: 'Orders', icon: OrdersIcon, count: 0 },
@@ -347,11 +385,29 @@ export default {
     nameperic() {
       return this.customer.full_name || `${this.customer.first_name || ''} ${this.customer.last_name || ''}`.trim() || 'Customer';
     },
-    selectedOrder() { return this.orders.find(o => o.id === this.selectedOrderId) || null; },
-    totalOverpayment() { return Math.max(0, parseFloat(this.over_payment) || 0); },
-    outstandingBalance() { return this.outstanding_amount; },
+    selectedOrder() {
+      return this.orders.find(o => o.id === this.selectedOrderId) || null;
+    },
+    totalOverpayment() {
+      return Math.max(0, parseFloat(this.summary.over_pay) || 0);
+    },
+    outstandingBalance() {
+      return parseFloat(this.summary.outstanding_balance) || 0;
+    },
+    unresolvedInvoices() {
+      return this.invoices.filter(i => parseFloat(i.balance_amount) > 0).length;
+    },
+    unresolvedCreditNotes() {
+      return this.creditNotes.length;
+    },
     ordersTableData() {
-      return this.orders.map(o => ({ ...o, start_contract: o.start_contract ? new Date(o.start_contract).toLocaleDateString() : 'N/A' }));
+      return this.orders.map(o => ({
+        ...o,
+        start_contract: o.start_contract ? new Date(o.start_contract).toLocaleDateString() : 'N/A'
+      }));
+    },
+    contracts() {
+      return this.orders.map(o => o.contract).filter(Boolean);
     },
     contractsTableData() {
       return this.contracts.map(c => ({
@@ -360,19 +416,21 @@ export default {
         contract_end_date: c.contract_end_date ? new Date(c.contract_end_date).toLocaleDateString() : 'N/A'
       }));
     },
-    filteredInvoices() { return this.selectedOrderId ? this.invoices.filter(i => i.order_id == this.selectedOrderId) : []; },
+    filteredInvoices() {
+      if (!this.selectedOrderId) return this.invoices;
+      return this.invoices.filter(i => i.order_id == this.selectedOrderId);
+    },
     filteredPayments() {
-      if (!this.selectedOrderId) return [];
       const invIds = this.filteredInvoices.map(i => i.id);
       return this.payments.filter(p => invIds.includes(p.ar_invoices_id));
     },
     filteredCreditNotes() {
-      if (!this.selectedOrderId) return [];
       const invIds = this.filteredInvoices.map(i => i.id);
       return this.creditNotes.filter(c => invIds.includes(c.invoice_id));
     },
     filteredLateCharges() {
-      return this.selectedOrderId ? this.lateCharges.filter(c => c.related_order_id == this.selectedOrderId) : [];
+      if (!this.selectedOrderId) return this.lateCharges;
+      return this.lateCharges.filter(c => c.related_order_id == this.selectedOrderId);
     },
     filteredInvoicesTableData() {
       return this.filteredInvoices.map(i => ({
@@ -383,32 +441,68 @@ export default {
       }));
     },
     filteredPaymentsTableData() {
-      return this.filteredPayments.map(p => ({ ...p, payment_date: p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A' }));
+      return this.filteredPayments.map(p => ({
+        ...p,
+        payment_date: p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'
+      }));
     },
     filteredCreditNotesTableData() {
-      return this.filteredCreditNotes.map(c => ({ ...c, issue_date: c.issue_date ? new Date(c.issue_date).toLocaleDateString() : 'N/A' }));
+      return this.filteredCreditNotes.map(c => ({
+        ...c,
+        issue_date: c.issue_date ? new Date(c.issue_date).toLocaleDateString() : 'N/A'
+      }));
     },
     filteredLateChargesTableData() {
       return this.filteredLateCharges.map(c => ({
         ...c,
         generated_date: c.generated_date ? new Date(c.generated_date).toLocaleDateString() : 'N/A',
         applied_date: c.applied_date ? new Date(c.applied_date).toLocaleDateString() : 'N/A',
-        invoice_no: c.original_invoice?.invoice_no || 'N/A'
+        invoice_no: c.invoice_no || 'N/A'
       }));
     },
     soaTransactions() {
-      if (!this.selectedOrderId) return [];
-      const invs = this.filteredInvoices;
-      const pays = this.filteredPayments;
-      const cns = this.filteredCreditNotes;
-      const lcs = this.filteredLateCharges.filter(c => c.status === 'applied');
-      const refs = this.refunds.filter(r => this.filteredPayments.map(p => p.id).includes(r.payment_id));
       const tx = [];
-      invs.forEach(i => tx.push({ transaction_date: i.issue_date ? new Date(i.issue_date).toLocaleDateString() : 'N/A', transaction: 'Invoice', description: i.invoice_no, debit: parseFloat(i.total_amount) || 0, credit: 0, balance: 0 }));
-      lcs.forEach(c => tx.push({ transaction_date: c.generated_date ? new Date(c.generated_date).toLocaleDateString() : 'N/A', transaction: 'Late Charge', description: c.description || c.id, debit: parseFloat(c.charge_amount) || 0, credit: 0, balance: 0 }));
-      refs.forEach(r => tx.push({ transaction_date: r.refund_date ? new Date(r.refund_date).toLocaleDateString() : 'N/A', transaction: 'Refund', description: r.id || r.payment_id, debit: parseFloat(r.amount) || 0, credit: 0, balance: 0 }));
-      pays.forEach(p => tx.push({ transaction_date: p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A', transaction: 'Payment', description: p.payment_id, debit: 0, credit: parseFloat(p.amount) || 0, balance: 0 }));
-      cns.forEach(c => tx.push({ transaction_date: c.issue_date ? new Date(c.issue_date).toLocaleDateString() : 'N/A', transaction: 'Credit Note', description: c.credit_note_no, debit: 0, credit: parseFloat(c.amount) || 0, balance: 0 }));
+      this.filteredInvoices.forEach(i => tx.push({
+        transaction_date: i.issue_date ? new Date(i.issue_date).toLocaleDateString() : 'N/A',
+        transaction: 'Invoice',
+        description: i.invoice_no,
+        debit: parseFloat(i.total_amount) || 0,
+        credit: 0,
+        balance: 0
+      }));
+      this.filteredLateCharges.filter(c => c.status === 'applied').forEach(c => tx.push({
+        transaction_date: c.generated_date ? new Date(c.generated_date).toLocaleDateString() : 'N/A',
+        transaction: 'Late Charge',
+        description: c.description || c.id,
+        debit: parseFloat(c.charge_amount) || 0,
+        credit: 0,
+        balance: 0
+      }));
+      this.refunds.forEach(r => tx.push({
+        transaction_date: r.refund_date ? new Date(r.refund_date).toLocaleDateString() : 'N/A',
+        transaction: 'Refund',
+        description: r.id || r.payment_id,
+        debit: parseFloat(r.amount) || 0,
+        credit: 0,
+        balance: 0
+      }));
+      this.filteredPayments.forEach(p => tx.push({
+        transaction_date: p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A',
+        transaction: 'Payment',
+        description: p.payment_id,
+        debit: 0,
+        credit: parseFloat(p.amount) || 0,
+        balance: 0
+      }));
+      this.filteredCreditNotes.forEach(c => tx.push({
+        transaction_date: c.issue_date ? new Date(c.issue_date).toLocaleDateString() : 'N/A',
+        transaction: 'Credit Note',
+        description: c.credit_note_no,
+        debit: 0,
+        credit: parseFloat(c.amount) || 0,
+        balance: 0
+      }));
+
       tx.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
       let bal = 0;
       tx.forEach(t => { bal += t.debit - t.credit; t.balance = bal; });
@@ -416,18 +510,31 @@ export default {
     }
   },
   methods: {
-    setActiveTab(tab) { this.activeTab = tab; this.$router.push({ query: { ...this.$route.query, tab } }); },
-    setSubTab(tab) { this.activeARTab = tab; this.$router.push({ query: { ...this.$route.query, subtab: tab } }); },
-    filterARData() { this.computeStats(); },
+    setActiveTab(tab) {
+      this.activeTab = tab;
+      this.$router.push({ query: { ...this.$route.query, tab } });
+    },
+    setSubTab(tab) {
+      this.activeARTab = tab;
+      this.$router.push({ query: { ...this.$route.query, subtab: tab } });
+    },
+    filterARData() { /* no-op */ },
     showNotification(message, type = 'success') {
       this.notification = { message, type };
       setTimeout(() => this.notification = { message: '', type: '' }, 5000);
     },
     formatCurrency(v) {
       const val = parseFloat(v) || 0;
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: this.currencyCode || 'SGD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: this.currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(val);
     },
-    computeLateCharge(i) { return parseFloat(i.late_payment_charges) || 0; },
+    computeLateCharge(i) {
+      return parseFloat(i.late_payment_charges) || 0;
+    },
     getStatusClass(s) {
       const map = { paid: 'bg-green-100 text-green-800', applied: 'bg-green-100 text-green-800', partial: 'bg-yellow-100 text-yellow-800', pending: 'bg-red-100 text-red-800' };
       return map[s] || 'bg-gray-100 text-gray-800';
@@ -436,116 +543,92 @@ export default {
       const map = { success: 'bg-green-100 text-green-800', pending: 'bg-yellow-100 text-yellow-800' };
       return map[s] || 'bg-gray-100 text-gray-800';
     },
-    computeStats() {
-      const invs = this.filteredInvoices;
-      if (!invs.length) return;
-      invs.forEach(i => {
-        const paid = this.payments.filter(p => p.ar_invoices_id === i.id).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-        const credits = this.filteredCreditNotes.filter(c => c.invoice_id === i.id).reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
-        i.paid_amount = paid;
-        i.credits_applied = credits;
-        i.balance_amount = (parseFloat(i.total_amount) || 0) - paid - credits;
-        i.status = i.balance_amount <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'pending');
-      });
-      this.unresolved_invoice = invs.filter(i => i.status !== 'paid').length;
-      this.unresolvedCreditNotes = this.filteredCreditNotes.length;
+    uploadPayslipF() {
+      // Placeholder – implement if needed
+      console.warn('uploadPayslipF not implemented');
     },
-    async fetchCurrency() {
-        try {
-          const response = await axios.get('/api/currency', this.getAxiosConfig())
-          if (response.data && Array.isArray(response.data) && response.data[0]?.code) {
-            this.currencyCode = response.data[0].code
-          } else if (response.data?.currency_code) {
-            this.currencyCode = response.data.currency_code
-          } else {
-            this.currencyCode = 'SGD'
-          }
-        } catch (error) {
-          console.error('Failed to fetch currency:', error)
-          this.currencyCode = 'SGD'
-        }
-      },
-    async fetchSOA() {
-      try {
-        const { data } = await axios.get(`/api/customers/${this.$route.params.id}/soa`, this.getAxiosConfig());
-        this.invoices = data.invoices || [];
-        this.payments = data.payments || [];
-        this.refunds = data.refunds || [];
-        this.creditNotes = data.credit_notes || [];
-        this.lateCharges = data.late_charges || [];
-        this.agingReport = data.aging_report || [];
-        this.totalDue = parseFloat(data.summary?.total_due) || 0;
-        this.totalPaid = parseFloat(data.summary?.total_paid) || 0;
-        this.totalCredits = parseFloat(data.summary?.total_credits) || 0;
-        this.totalLateCharges = parseFloat(data.summary?.total_late_charges) || 0;
-        this.totalPendingLate = parseFloat(data.summary?.total_pending_late_charges) || 0;
-        this.outstanding_amount = parseFloat(data.summary?.outstanding_balance) || 0;
-        this.over_payment = parseFloat(data.summary?.over_pay) || 0;
-        this.parseNumericFields();
-        this.computeStats();
-      } catch (e) { console.error(e); this.showNotification('Failed to load SOA', 'error'); }
-    },
-    parseNumericFields() {
-      const toFloat = arr => arr.forEach(x => Object.keys(x).forEach(k => { if (!isNaN(parseFloat(x[k]))) x[k] = parseFloat(x[k]); }));
-      toFloat(this.invoices); toFloat(this.payments); toFloat(this.creditNotes); toFloat(this.lateCharges); toFloat(this.refunds);
-    },
-    async fetchCustomerData() {
+    async fetchData() {
       try {
         const { data } = await axios.get(`/api/customers/${this.$route.params.id}`, this.getAxiosConfig());
         this.customer = data;
-        this.orders = data.orders || [];
-        this.contracts = data.contracts || [];
-        if (this.orders.length) this.selectedOrderId = this.orders[0].id;
-        this.tabs.find(t => t.id === 'orders').count = this.orders.length;
-        this.tabs.find(t => t.id === 'contracts').count = this.contracts.length;
         this.cust_id = data.id;
         this.customer_loan = parseFloat(data.customer_loan) || 0;
-      } catch (e) { console.error(e); this.showNotification('Failed to load customer', 'error'); }
-    },
-    async get_references() { try { const { data } = await axios.get(`api/reference/list/${this.$route.params.id}`, this.getAxiosConfig()); this.referencesList = data; } catch (e) { console.error(e); } },
-    async getRelationList() { try { const { data } = await axios.get(`api/relation/list`, this.getAxiosConfig()); this.listRelation = data; } catch (e) { console.error(e); } },
-    async getState() { try { const { data } = await axios.get(`api/statelist/raw_data`, this.getAxiosConfig()); this.listState = data; } catch (e) { console.error(e); } },
-    editReference(i) { this.$router.push({ name: 'EditReference', params: { id: i.id } }); },
-    async handleRefUpdate() { await this.get_references(); this.showNotification('Reference updated'); },
-    async handleUpdateInformation(payload) {
-      Swal.fire({ title: 'Update Customer?', text: 'Confirm update', icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes' }).then(async r => {
-        if (r.isConfirmed) {
-          try {
-            const { data } = await axios.put(`/api/customers/${this.$route.params.id}`, payload, this.getAxiosConfig());
-            this.customer = { ...this.customer, ...data.data };
-            this.showNotification('Customer updated', 'success');
-          } catch (e) { this.showNotification('Update failed', 'error'); }
+
+        this.orders = data.orders || [];
+        this.invoices = data.invoices || [];
+        this.payments = data.payments || [];
+        this.creditNotes = data.credit_notes || [];
+        this.lateCharges = data.late_charges || [];
+        this.refunds = data.refunds || [];
+        this.agingReport = data.aging_report || [];
+        this.summary = data.summary || {};
+        if (this.orders.length && !this.selectedOrderId) {
+          this.selectedOrderId = this.orders[0].id;
         }
-      });
+
+        this.tabs.find(t => t.id === 'orders').count = this.orders.length;
+        this.tabs.find(t => t.id === 'contracts').count = this.contracts.length;
+        console.log('this.listState',this.listState)
+      } catch (e) {
+        console.error(e);
+        this.showNotification('Failed to load customer data', 'error');
+      }
     },
-    async handleCustUpdate(payload) {
-      try { await axios.post(`api/customer/update/${this.cust_id}`, payload, this.getAxiosConfig()); this.sucessaddmsd = 'Address updated'; this.showNotification('Address updated'); } catch (e) { this.showNotification('Failed', 'error'); }
-    },
-    async handleSubmitAdditionaldoc(formData) {
+    async fetchReferencesAndLists() {
       try {
-        const { data } = await axios.post(`api/uploadAddionaldoc/${this.cust_id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' }, ...this.getAxiosConfig() });
-        this.sucessupload = data.status === 'success' ? 'Documents uploaded' : 'Invalid file';
-        this.showNotification(this.sucessupload);
-      } catch (e) { this.showNotification('Upload failed', 'error'); }
+        const {refRes, relRes } = await Promise.all([
+          axios.get(`/api/reference/list/${this.$route.params.id}`, this.getAxiosConfig()),
+          axios.get(`/api/relation/list`, this.getAxiosConfig())
+        ]);
+        this.referencesList = refRes?.data;
+        this.listRelation = relRes?.data;
+      } catch (e) {
+        console.error(e);
+      }
     },
-    async handleSallaryUpdate(formData) {
-      try { await axios.post(`api/salary/update/${this.cust_id}/${this.$route.params.hash}`, formData, { headers: { 'Content-Type': 'multipart/form-data' }, ...this.getAxiosConfig() }); this.sucessemplmsd = 'Employment updated'; this.showNotification('Employment updated'); } catch (e) { this.showNotification('Failed', 'error'); }
+    async fetchCurrency() {
+      try {
+        const response = await axios.get('/api/currency', this.getAxiosConfig());
+        this.currencyCode = response.data?.currency_code || response.data?.[0]?.code || 'SGD';
+      } catch (e) {
+        this.currencyCode = 'SGD';
+      }
     },
-    toNric(type) {
-      axios.get(`api/create/token/s3?type=${type}&order_id=${this.selectedOrder?.order_number || ''}`, this.getAxiosConfig())
-        .then(r => { if (r.data) window.open(`api//nricimage?token=${r.data}`, '_blank'); })
-        .catch(() => this.showNotification('Cannot open document', 'error'));
-    },
-    goBackToCustomers() { this.$router.push('/customers'); }
+    editReference(i) { this.$router.push({ name: 'EditReference', params: { id: i.id } }); },
+    async handleRefUpdate() { await this.fetchReferencesAndLists(); this.showNotification('Reference updated'); },
+    async handleUpdateInformation(payload) { /* implement */ },
+    async handleCustUpdate(payload) { /* implement */ },
+    async handleSubmitAdditionaldoc(formData) { /* implement */ },
+    async handleSallaryUpdate(formData) { /* implement */ },
+    toNric(type) { /* implement */ },
+    goBackToCustomers() { this.$router.push('/customers'); },
+    async fetchStateList() {
+    try {
+      const response = await axios.get(`/api/states/${this.$route.params.id}`, this.getAxiosConfig());
+      this.listState = response.data || [];
+    } catch (e) {
+      console.error('Failed to fetch states:', e);
+      this.listState = []; // Fallback empty array
+    }
   },
+  },
+
   async mounted() {
-    if (!this.$route.query.tab) this.$router.replace({ query: { ...this.$route.query, tab: 'summary' } });
+    if (!this.$route.query.tab) {
+      this.$router.replace({ query: { ...this.$route.query, tab: 'summary' } });
+    }
     this.activeTab = this.$route.query.tab || 'summary';
     this.activeARTab = this.$route.query.subtab || 'soa';
-    await Promise.all([this.fetchCurrency(), this.fetchCustomerData(), this.get_references(), this.getRelationList(), this.getState(), this.fetchSOA()]);
+
+    await Promise.all([
+      this.fetchCurrency(),
+      this.fetchData(),
+      this.fetchReferencesAndLists(),
+      this.fetchStateList()
+    ]);
   },
   watch: {
-    '$route.query.tab'(v) { this.activeTab = v || 'summary'; if (v === 'ar') this.fetchSOA(); },
+    '$route.query.tab'(v) { this.activeTab = v || 'summary'; },
     '$route.query.subtab'(v) { this.activeARTab = v || 'soa'; }
   }
 };

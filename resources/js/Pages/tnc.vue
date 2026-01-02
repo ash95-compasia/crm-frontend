@@ -782,17 +782,27 @@ const deleteTerms = async (terms) => {
 
 const viewFile = async (terms) => {
     try {
-        const response = await axios.get(`/api/terms-conditions/${terms.id}/view`, getAxiosConfig());
-        
-        if (response.data.success) {
-            currentPdfUrl.value = response.data.data.url;
-            currentPdfTitle.value = response.data.data.title;
-            showPdfViewer.value = true;
-        } else {
-            showNotification('Failed to load PDF file', 'error');
+        // Fetch the actual PDF binary data as a blob
+        const response = await axios.get(`/api/terms-conditions/${terms.id}/view`, {
+            ...getAxiosConfig(),
+            responseType: 'blob'  // This is crucial!
+        });
+
+        // Optional: Check if it's really a PDF
+        if (response.data.type !== 'application/pdf' && !response.data.type.startsWith('application/pdf')) {
+            throw new Error('Invalid file type received');
         }
+
+        // Create a proper object URL from the real PDF blob
+        const blobUrl = window.URL.createObjectURL(response.data);
+
+        currentPdfUrl.value = blobUrl;
+        currentPdfTitle.value = terms.title || 'Terms & Conditions';
+        showPdfViewer.value = true;
+
     } catch (error) {
-        showNotification(error.response?.data?.message || 'Failed to view document', 'error');
+        console.error('Failed to load PDF:', error);
+        showNotification('Failed to load PDF file. It may be corrupted or inaccessible.', 'error');
     }
 };
 

@@ -1,5 +1,13 @@
 export const ORDERS_TABLE_COLUMNS = [
     {
+        key: 'id',
+        label: 'ID',
+        sortable: true,
+        searchable: true,
+        width: '20%',
+        hidden:true
+    },
+    {
         key: 'order_number',
         label: 'Order Number',
         sortable: true,
@@ -7,15 +15,22 @@ export const ORDERS_TABLE_COLUMNS = [
         width: '20%'
     },
     {
-        key: 'customer',
+        key: 'customer.full_name',
         label: 'Customer',
         sortable: true,
         searchable: true,
         width: '20%'
     },
     {
-        key: 'program',
+        key: 'program.program_name',
         label: 'Program',
+        sortable: true,
+        searchable: true,
+        width: '15%'
+    },
+    {
+        key: 'device_program.product.product_name',
+        label: 'Device Name',
         sortable: true,
         searchable: true,
         width: '15%'
@@ -24,7 +39,7 @@ export const ORDERS_TABLE_COLUMNS = [
         key: 'program_fee',
         label: 'Program Fee',
         sortable: true,
-		type: 'currency',
+        type: 'currency',
         width: '15%'
     },
     {
@@ -41,16 +56,71 @@ export const ORDERS_TABLE_COLUMNS = [
         width: '10%'
     },
     {
-        key: 'order_status_id',
+        key: 'status.name',
         label: 'Status',
         sortable: true,
         width: '10%'
     },
     {
-        key: 'actions',
-        label: 'Actions',
+        key: 'id_number',
+        label: 'ID Number',
+        sortable: true,
+        searchable: true,
+        hidden: true
+    },
+    {
+        key: 'tax',
+        label: 'Tax',
+        sortable: true,
+        type: 'currency',
+        hidden: true
+    },
+    {
+        key: 'pickup_branch',
+        label: 'Pickup Branch',
+        sortable: true,
+        searchable: true,
+        hidden: true
+    },
+    {
+        key: 'branch.name',
+        label: 'Branch',
+        sortable: true,
+        searchable: true,
+        hidden: true
+    },
+    {
+        key: 'start_contract',
+        label: 'Contract Start Date',
+        sortable: true,
+        type: 'date',
+        hidden: true
+    },
+    {
+        key: 'created_at',
+        label: 'Created At',
+        sortable: true,
+        type: 'date',
+        hidden: true
+    },
+    {
+        key: 'remarks',
+        label: 'Remarks',
         sortable: false,
-        width: '10%'
+        searchable: true,
+        hidden: true
+    },
+    {
+        key: 'data_verification',
+        label: 'Data Verification',
+        sortable: true,
+        hidden: true
+    },
+    {
+        key: 'call_verification',
+        label: 'Call Verification',
+        sortable: true,
+        hidden: true
     }
 ];
 

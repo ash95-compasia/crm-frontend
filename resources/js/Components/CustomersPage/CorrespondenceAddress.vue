@@ -2,7 +2,7 @@
   <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-6">
     <div class="flex items-center mb-6">
       <i class="ri-map-pin-user-line text-gray-400 dark:text-gray-300 mr-2"></i>
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">CORRESPONDENCE ADDRESS</h2>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Correspondence Address</h2>
     </div>
     <div class="space-y-6">
       <div>
@@ -65,7 +65,7 @@ export default {
   name: 'CorrespondenceAddress',
   props: {
     address: String,
-    postalcode: String,
+    postal_code: String,
     city: String,
     state: String,
     listState: Array,
@@ -75,7 +75,7 @@ export default {
   data() {
     return {
       localAddress: this.address || '',
-      localPostalcode: this.postalcode || '',
+      localPostalcode: this.postal_code || '',
       localCity: this.city || '',
       localState: this.state || ''
     };
@@ -90,7 +90,7 @@ export default {
     getFormData() {
       return {
         address: this.localAddress,
-        postalcode: this.localPostalcode,
+        postal_code: this.localPostalcode,
         city: this.localCity,
         state: this.localState
       };
